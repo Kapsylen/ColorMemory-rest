@@ -1,64 +1,57 @@
 package sesv.dev.domain;
 
 import org.junit.jupiter.api.Test;
+import sesv.dev.error.CardIsAlreadyDrawnException;
+import sesv.dev.error.InvalidInputException;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 class GameBoardTest {
 
     @Test
-    void shouldRemoveCardFromGameBoard_whenRemoveCard(){
-        GameBoardService gameBoard = new GameBoardService();
-        var card = gameBoard.removeCard(1, 1);
-        assertTrue(card.isPresent());
-    }
-
-
-    @Test
     void shouldReturnCardFromGameBoard_whenGetCard() {
-        GameBoardService gameBoard = new GameBoardService();
-        var card = gameBoard.drawACard(1, 1);
-        assertTrue(card.isPresent());
+        GameBoardService gameBoardService = new GameBoardService();
+        gameBoardService.createGameBoard();
+        var card = gameBoardService.drawACard(1, 1);
+        assertNotNull(card);
     }
 
     @Test
-    void shouldReturnNoCard_whenDrawCardFromEmptyPosition() {
-        GameBoardService gameBoard = new GameBoardService();
-        gameBoard.removeCard(1, 1);
-        var card = gameBoard.removeCard(1, 1);
-        assertFalse(card.isPresent());
+    void shouldThrowCardIsAlreadyDrawnException_whenNoCardFoundOnGivenPosition() {
+        GameBoardService gameBoardService = new GameBoardService();
+        gameBoardService.createGameBoard();
+        gameBoardService.removeCard(1, 1);
+        assertThrowsExactly(CardIsAlreadyDrawnException.class,
+                () -> gameBoardService.drawACard(1, 1)
+        );
     }
 
     @Test
-    void whenTwoCardsAreDrawnWhichHasSameColorAndDifferentPosition_shouldBeConsideredAsEqual() {
-        GameBoardService gameBoard = new GameBoardService();
-        var card1 = gameBoard.getCards()[0][0];
-        card1.setColour(Color.BLUE);
-        var card2 = gameBoard.getCards()[2][0];
-        card2.setColour(Color.BLUE);
-        assertTrue(card1.equals(card2));
+    void shouldThrowInvalidInputException_whenInvalidInputPosition() {
+        GameBoardService gameBoardService = new GameBoardService();
+        gameBoardService.createGameBoard();
+        assertThrowsExactly(InvalidInputException.class,
+                () -> gameBoardService.drawACard(-1, 1)
+        );
     }
 
     @Test
-    void whenTwoCardsAreDrawnWhichHasDifferentColorAndDifferentPosition_shouldBeConsideredAsNotEqual() {
-        GameBoardService gameBoard = new GameBoardService();
-        var card1 = gameBoard.getCards()[0][0];
-        card1.setColour(Color.BLUE);
-        var card2 = gameBoard.getCards()[2][0];
-        card2.setColour(Color.RED);
-        assertFalse(card1.equals(card2));
+    void whenSameCardIsDrawnTwice_shouldBeConsideredAsNotEqual(){
+        GameBoardService gameBoardService = new GameBoardService();
+        gameBoardService.createGameBoard();
+        Card card1 = gameBoardService.drawACard(1, 1);
+        Card card2 = gameBoardService.drawACard(1, 1);
+        assertNotEquals(card1, card2);
     }
 
     @Test
-    void whenSameCardIsDrawnTwice_shouldBeConsideredAsNotEqual() {
-        GameBoardService gameBoard = new GameBoardService();
-        var card1 = gameBoard.getCards()[0][0];
-        card1.setColour(Color.BLUE);
-        var card2 = gameBoard.getCards()[0][0];
-        card2.setColour(Color.BLUE);
-        card1.setXAndYPosition(0, 0);
-        card2.setXAndYPosition(0, 0);
-        assertFalse(card1.equals(card2));
+    void whenDrawARemovedCard_ShouldThrowCardIsAlreadyDrawnException() {
+        GameBoardService gameBoardService = new GameBoardService();
+        gameBoardService.createGameBoard();
+        gameBoardService.removeCard(1, 1);
+        assertThrowsExactly(CardIsAlreadyDrawnException.class,
+                () -> gameBoardService.drawACard(1, 1)
+        );
     }
 }

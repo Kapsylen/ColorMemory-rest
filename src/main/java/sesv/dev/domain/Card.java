@@ -4,36 +4,36 @@ import java.util.Objects;
 
 public class Card {
 
-   private Color color;
-   private int xPos, yPos;
+    private Color color;
+    private int xPosition, yPosition;
 
-    public Card(Color color) {
+    public Card(Color color, int xPosition, int yPosition) {
         this.color = color;
-    }
-
-    public void setXAndYPosition(int x, int y) {
-      this.xPos = x;
-      this.yPos = y;
+        this.xPosition = xPosition;
+        this.yPosition = yPosition;
     }
 
     public Color getColor() {
         return color;
     }
 
-    public void setColour(Color color) {
-        this.color = color;
+    public int getXPos() {
+        return xPosition;
     }
 
+    public int getYPos() {
+        return yPosition;
+    }
 
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         Card card = (Card) o;
-        return (xPos != card.xPos || yPos != card.yPos) && color == card.color;
+        return (xPosition != card.xPosition || yPosition != card.yPosition) && color == card.color;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(color, xPos, yPos);
+        return Objects.hash(color, xPosition, yPosition);
     }
 }
