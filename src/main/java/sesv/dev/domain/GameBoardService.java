@@ -3,150 +3,99 @@ package sesv.dev.domain;
 import org.springframework.stereotype.Service;
 import sesv.dev.application.CardApi;
 import sesv.dev.error.CardIsAlreadyDrawnException;
-import sesv.dev.error.InvalidInputException;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 @Service
 public class GameBoardService {
 
-        private Card[][] cards;
-        private static int totalPoints = 0;
+    private Map<Integer, Card> cards;
+    private static int totalPoints = 0;
 
-        public void createGameBoard() {
-            this.cards = new Card[4][4];
-            var listOfPairColours = new ArrayList<Color>();
-            listOfPairColours.addAll(Arrays.asList(Color.values()));
-            listOfPairColours.addAll(Arrays.asList(Color.values()));
-            Collections.shuffle(listOfPairColours);
-            createAndSetColorAndPositionForEachCard(listOfPairColours);
-        }
+    public void createGameBoard(Integer cards) {
+       this.cards = new HashMap<>();
+        List<Color> pairOfCards = new ArrayList<>();
+        pairOfCards.addAll(Stream.of(Color.values()).limit(cards).toList());
+        pairOfCards.addAll(Stream.of(Color.values()).limit(cards).toList());
 
-        private void createAndSetColorAndPositionForEachCard(List<Color> eightPairOfColours) {
-            int colorsForEachLine = 4;
-            for (int rowIndex = 0; rowIndex < cards.length; rowIndex++) {
-                for (int columnIndex = 0; columnIndex < colorsForEachLine; columnIndex++) {
-                    int colorIndex = rowIndex * colorsForEachLine + columnIndex;
-                    cards[rowIndex][columnIndex] = new Card(eightPairOfColours.get(colorIndex), rowIndex, columnIndex);
-                }
-            }
+        for(int i = 0; i < pairOfCards.size(); i++) {
+            this.cards.put(i + 1, Card.builder()
+                    .color(pairOfCards.get(i))
+                    .build());
         }
+    }
 
-        public Card drawACard(int positionX, int positionY) {
-            positionX = adjustPosXAndYToMatchArrayStartFromIndexZero(positionX);
-            positionY = adjustPosXAndYToMatchArrayStartFromIndexZero(positionY);
-            if (isValidXAndYPosition(positionX, positionY)) {
-                if (cards[positionX][positionY] != null) {
-                    Card drawnCard = cards[positionX][positionY];
-                    return drawnCard;
-                } else {
-                    throw new CardIsAlreadyDrawnException();
-                }
-            }
-            throw new InvalidInputException();
-        }
+    public Card drawACard(int number) {
 
-        private boolean isValidXAndYPosition(int posX, int posY) {
-            return posX >= 0 && posX < cards.length && posY >= 0 && posY < cards[posX].length;
+        if (cards.containsKey(number)) {
+            return cards.get(number);
         }
+        throw new CardIsAlreadyDrawnException();
+    }
 
-        private int adjustPosXAndYToMatchArrayStartFromIndexZero(int value) {
-            int adjustPosXAndYArrayStartFromIndexZero = 1;
-            value -= adjustPosXAndYArrayStartFromIndexZero;
-            return value;
-        }
+    public void removeCard(int number) {
+        cards.remove(number);
+    }
 
-        public void removeCard(int posX, int posY) {
-            if (cards[posX][posY] != null) {
-                cards[posX][posY] = null;
-            }
-        }
+    /**
+     * Only used for test purposes from the CLI
+     * @return
+     */
+    public List<String> displayAllColourCards() {
+        return Stream.of(cards).map(String::valueOf).toList();
+    }
 
-        /**
-         * Only used for test purposes from the CLI
-         * @return
-         */
-        public String displayAllColourCards() {
-            StringBuilder board = new StringBuilder();
-            for (int rowIndex = 0; rowIndex < cards.length; rowIndex++) {
-                for (int columnIndex = 0; columnIndex < cards[rowIndex].length; columnIndex++) {
-                    if (cards[rowIndex][columnIndex] != null) {
-                        board.append("[" +cards[rowIndex][columnIndex].getColor() + "] ");
-                    } else {
-                        board.append("[XXX] ");
-                    }
-                }
-                board.append("\n");
-            }
-            return board.toString();
-        }
 
-        public String displayAllCardsWithPositionDetails(Card card) {
-            StringBuilder board = new StringBuilder();
-            for (int rowIndex = 0; rowIndex < cards.length; rowIndex++) {
-                for (int columnIndex = 0; columnIndex < cards[rowIndex].length; columnIndex++) {
-                    if (cards[rowIndex][columnIndex] != null) {
-                        if (card != null && rowIndex == card.getXPos() && columnIndex == card.getYPos()) {
-                            board.append("[" + card.getColor() + "], ");
-                        } else {
-                            board.append("[" + (rowIndex+1) + ", " + (columnIndex+1) + "],");
-                        }
-                    } else {
-                        board.append(("[XXX], "));
-                    }
-                }
-                board.append("\n");
-            }
-            return board.toString();
-        }
-
-        public int getCardsLeft() {
-            int cardLeft;
-            cardLeft = 0;
-            for (int rowIndex = 0; rowIndex < cards.length; rowIndex++) {
-                for (int j = 0; j < cards[rowIndex].length; j++) {
-                    if (cards[rowIndex][j] != null) {
-                        cardLeft++;
-                    }
-                }
-            }
-            return cardLeft;
-        }
-    public String startGame() {
-        createGameBoard();
+    public String startGame(Integer amountOfPairs) {
+        createGameBoard(amountOfPairs);
         StringBuilder startGameInstruction = new StringBuilder();
         startGameInstruction.append(DISPLAY_RULES());
-        startGameInstruction.append(displayAllCardsWithPositionDetails(null));
+        var cards = getGameBoard();
+        shuffleCards(cards);
+        startGameInstruction.append(getAllAvailableColours());
         return startGameInstruction.toString();
+    }
+
+    public void shuffleCards(List<Card> cards) {
+        var listOfPairOfColors = new ArrayList<Color>();
+        cards.forEach(card -> listOfPairOfColors.add(card.color()));
+        Collections.shuffle(listOfPairOfColors);
+        this.cards = new HashMap<>();
+        for(int i = 0; i < listOfPairOfColors.size(); i++) {
+            this.cards.put(i + 1, Card.builder()
+                    .color(listOfPairOfColors.get(i))
+                    .build());
+        }
+
     }
 
     public String playGame(CardApi card1, CardApi card2) {
         StringBuilder playResponse = new StringBuilder();
-        int card1PosX = card1.posX();
-        int card1PosY = card1.posY();
-        int card2PosX = card2.posX();
-        int card2PosY = card2.posY();
-        Card drawnCard1 = drawACard(card1PosX, card1PosY);
-        Card drawnCard2 = drawACard(card2PosX, card2PosY);
-        isCard1AndCard2APair(drawnCard1, drawnCard2);
+        int cardNumber1 = card1.number();
+        int cardNumber2 = card2.number();
+        Card drawnCard1 = drawACard(cardNumber1);
+        Card drawnCard2 = drawACard(cardNumber2);
+        if(isCard1AndCard2APair(drawnCard1, drawnCard2)) {
+            totalPoints++;
+            playResponse.append("Pair. You got 1 point.");
+            removeCard(cardNumber1);
+            removeCard(cardNumber2);
+        } else {
+            totalPoints--;
+            playResponse.append("No pair. You lost 1 point.");
+        }
+        playResponse.append(displayScore());
+        playResponse.append(getAllAvailableColours());
         return playResponse.toString();
     }
 
-
-    private void isCard1AndCard2APair(Card card1, Card card2) {
-        if (isAPairOfCards(card1, card2)) {
-            System.out.println("Pair. You got 1 point.");
-            totalPoints++;
-            removeCard(card1.getXPos(), card1.getYPos());
-            removeCard(card2.getXPos(), card2.getYPos());
-        } else {
-            System.out.println("No pair. You lost 1 point.");
-            totalPoints--;
-        }
+    private String displayScore() {
+        return "\nPoints: " + totalPoints;
     }
 
 
-    public static boolean isAPairOfCards(Card card1, Card card2) {
+    private boolean isCard1AndCard2APair(Card card1, Card card2) {
         return card1.equals(card2);
     }
 
@@ -159,14 +108,43 @@ public class GameBoardService {
                 Draw two cards from the game board below.
                 A pair of same colour gives 1 point and 
                 two different cards gives -1 point. Each card 
-                position is numbered from left to right 
-                from the top left corner of the board and starts 
-                at row position 1 and column position 1 and 
-                so on. When a correct pair has been drawn from 
-                the game board it will be removed and marked as [XXX]. 
+                position is a number from 1 - 32 . When a correct 
+                pair has been drawn from the game board it will be removed. 
                 The game is completed when all cards have been drawn 
                 from the game board and the total score will be
                 present.. 
                 """);
+    }
+
+    public List<Card> getGameBoard() {
+        return this.cards.values().stream().toList();
+    }
+
+    public String getAllAvailableColours() {
+        StringBuilder availableColours = new StringBuilder();
+        for(int i = 1; i <= this.cards.keySet().size(); i++) {
+            if(this.cards.get(i) != null) {
+                if(i % 5 == 0) {
+                    availableColours.append("\n" +  "Nr:" + i + ", color:" + this.cards.get(i).color() + ",");
+                } else {
+                    availableColours.append("Nr:" + i + ", color:" +this.cards.get(i).color() + ", ");
+                }
+            }
+        }
+        return availableColours.toString();
+    }
+
+    public String getAllCards() {
+        StringBuilder availableColours = new StringBuilder();
+        for(int i = 1; i < this.cards.keySet().size(); i++) {
+            if(this.cards.get(i) != null) {
+                if(i % 6 == 0) {
+                    availableColours.append("\n");
+                } else {
+                    availableColours.append(i + ", ");
+                }
+            }
+        }
+        return availableColours.toString();
     }
 }

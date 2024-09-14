@@ -3,10 +3,7 @@ package sesv.dev.application;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 import sesv.dev.domain.GameBoardService;
 
 @Controller
@@ -19,10 +16,9 @@ public class ColourMemoryController {
 
     @PostMapping("/start-game")
     @ResponseBody
-    public String startNewGame() {
-        return gameBoardService.startGame();
+    public String startNewGame(@RequestParam Integer amountOfPairs) {
+        return gameBoardService.startGame(amountOfPairs);
     }
-
 
     @PostMapping("/play/drawCard")
     @ResponseBody
