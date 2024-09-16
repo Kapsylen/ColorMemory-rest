@@ -38,22 +38,13 @@ public class GameBoardService {
         cards.remove(number);
     }
 
-    /**
-     * Only used for test purposes from the CLI
-     * @return
-     */
-    public List<String> displayAllColourCards() {
-        return Stream.of(cards).map(String::valueOf).toList();
-    }
-
-
     public String startGame(Integer amountOfPairs) {
         createGameBoard(amountOfPairs);
         StringBuilder startGameInstruction = new StringBuilder();
-        startGameInstruction.append(DISPLAY_RULES());
+        startGameInstruction.append(displayRules());
         var cards = getGameBoard();
         shuffleCards(cards);
-        startGameInstruction.append(getAllAvailableColours());
+        startGameInstruction.append(getAllCards());
         return startGameInstruction.toString();
     }
 
@@ -70,28 +61,46 @@ public class GameBoardService {
 
     }
 
-    public String playGame(CardApi card1, CardApi card2) {
+    public String playGame(CardApi firstCard, CardApi secondCard) {
         StringBuilder playResponse = new StringBuilder();
-        int cardNumber1 = card1.number();
-        int cardNumber2 = card2.number();
-        Card drawnCard1 = drawACard(cardNumber1);
-        Card drawnCard2 = drawACard(cardNumber2);
-        if(isCard1AndCard2APair(drawnCard1, drawnCard2)) {
-            totalPoints++;
-            playResponse.append("Pair. You got 1 point.");
-            removeCard(cardNumber1);
-            removeCard(cardNumber2);
+        int firstCardNumber = firstCard.number();
+        int secondCardNumber = secondCard.number();
+        Card drawnFirstCard = drawACard(firstCardNumber);
+        Card drawnSecondCard = drawACard(secondCardNumber);
+
+        if(isCard1AndCard2APair(drawnFirstCard, drawnSecondCard)) {
+            resolveCardsAsPair(playResponse, firstCardNumber, secondCardNumber);
         } else {
-            totalPoints--;
-            playResponse.append("No pair. You lost 1 point.");
+            resolveCardsAsNotPair(playResponse);
         }
-        playResponse.append(displayScore());
-        playResponse.append(getAllAvailableColours());
+
+        playResponse.append(displayScore()).append(getAllCards());
+
         return playResponse.toString();
     }
 
+    private void resolveCardsAsPair(StringBuilder playResponse, int firstCardNumber, int secondCardNumber){
+        totalPoints++;
+        playResponse.append("Pair. You got 1 point.\n");
+        removeCard(firstCardNumber);
+        removeCard(secondCardNumber);
+
+        if(cards.size() == 0) {
+            playResponse.append(printGameCompletedMessage());
+        }
+    }
+
+    private void resolveCardsAsNotPair(StringBuilder playResponse){
+        totalPoints--;
+        playResponse.append("No pair. You lost 1 point.\n");
+    }
+
+    private String printGameCompletedMessage() {
+        return String.format("\nGame completed. You got a total of: %d  points.", totalPoints);
+    }
+
     private String displayScore() {
-        return "\nPoints: " + totalPoints;
+        return "\nPoints: " + totalPoints + "\n";
     }
 
 
@@ -99,7 +108,7 @@ public class GameBoardService {
         return card1.equals(card2);
     }
 
-    private final String DISPLAY_RULES() {
+    private String displayRules() {
         return (
                 """
                 Welcome to Colour Memory Game.
@@ -120,14 +129,18 @@ public class GameBoardService {
         return this.cards.values().stream().toList();
     }
 
+    /**
+     * Only used for test purposes from the CLI
+     * @return
+     */
     public String getAllAvailableColours() {
         StringBuilder availableColours = new StringBuilder();
-        for(int i = 1; i <= this.cards.keySet().size(); i++) {
-            if(this.cards.get(i) != null) {
-                if(i % 5 == 0) {
-                    availableColours.append("\n" +  "Nr:" + i + ", color:" + this.cards.get(i).color() + ",");
+        for(var entry : cards.entrySet()) {
+            if(entry.getKey() != null) {
+                if(entry.getKey() % 5 == 0) {
+                    availableColours.append("\nNr:" + entry.getKey() + ", color:" + entry.getValue().color() + ", ");
                 } else {
-                    availableColours.append("Nr:" + i + ", color:" +this.cards.get(i).color() + ", ");
+                    availableColours.append("Nr:" + entry.getKey() + ", color:" + entry.getValue().color() + ", ");
                 }
             }
         }
@@ -136,12 +149,12 @@ public class GameBoardService {
 
     public String getAllCards() {
         StringBuilder availableColours = new StringBuilder();
-        for(int i = 1; i < this.cards.keySet().size(); i++) {
-            if(this.cards.get(i) != null) {
-                if(i % 6 == 0) {
-                    availableColours.append("\n");
+        for(var entry : cards.entrySet()) {
+            if(entry.getKey() != null) {
+                if(entry.getKey() % 5 == 0) {
+                    availableColours.append("\n" +entry.getKey() + ", ");
                 } else {
-                    availableColours.append(i + ", ");
+                    availableColours.append(entry.getKey() + ", ");
                 }
             }
         }

@@ -2,13 +2,8 @@ package sesv.dev.domain;
 
 import org.junit.jupiter.api.Test;
 import sesv.dev.error.CardIsAlreadyDrawnException;
-import sesv.dev.error.InvalidInputException;
-import sesv.dev.error.InvalidNumberException;
-
-import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 class GameBoardTest {
 
@@ -66,11 +61,4 @@ class GameBoardTest {
         gameBoardService.createGameBoard(10);
 
     }
-
-        @Test
-        void randomizeCards () {
-            Random rand = new Random();
-            ColorV2 color = new ColorV2(String.format("#%06x", rand.nextInt(256 * 256 * 256)));
-            System.out.println(color.getRgbColor());
-        }
 }
